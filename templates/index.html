@@ -1,0 +1,46 @@
+{% extends 'template.html' %}
+
+
+	{% block nav %}
+		{{ super() }}
+		{% if email %}
+			<nav>
+				<div id="give-credentials">
+					<span>{{ name }} {{ email }}</span>
+					<ul>
+						<li id="signin-button"><a href="{{ url_for('logout_user') }}">Log Out</a></li>
+					</ul>
+				</div>
+			</nav>
+		
+		{% else %}
+			<nav>
+				<div id="give-credentials">
+					<ul>
+						<li id="registration-button"><a href="{{ url_for('register_user') }}">Register</a></li>
+						<li id="signin-button"><a href="{{ url_for('signin_user') }}">Sign In</a></li>
+					</ul>
+				</div>
+			</nav>
+		{% endif %}
+	{% endblock %}
+
+	{% block body %}
+		{% if email %}
+			<h1>After Login</h1>
+			<form action="{{ url_for('main') }}" method="POST">
+				<input type="text" name="isbnNumber" placeholder="Enter Book ISBN number">
+				<input type="text" name="title" placeholder="Enter Book title">
+				<input type="text" name="author" placeholder="Enter Book author">
+				<button type="submit">Search</button>
+			</form>
+			<hr>
+			<p>{{ isbn }} {{ title }} {{ author }}</p>
+			{% if result %}
+				<h1>Search Results</h1>
+			{% endif %}
+		{% else %}
+			<h1>Before Loggin</h1>
+		{% endif %}
+		
+	{% endblock %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{% block title %}{% endblock %}</title>
+	<link rel="stylesheet" type="text/css" href="statics/main.css">
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+	<header>
+		<div id="logo">Books checker</div>
+		{% block nav %}
+			{% for message in get_flashed_messages() %}
+				<h1>{{ message }}</h1>
+			{% endfor %}
+		{% endblock %}
+	</header>
+	<section>
+		{% block body %}
+		{% endblock %}
+	</section>
+	<footer>
+		<div id="copy-rights">Copy Rights&time; Cedric Murairi 2020</div>
+		<div id="company">InfinitLoop Developer</div>
+	</footer>
+</body>
+</html>
