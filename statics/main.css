@@ -2,3 +2,72 @@ body{
 	width: 80%;
 	margin: auto;
 }
+
+#logo{
+	margin-top: 20px;
+	font-size: 30px;
+	font-weight: bolder;
+	font-family: helvetica;
+	color: grey;
+	border-top-left-radius: 30px;
+	border-bottom-right-radius: 30px; 
+	padding: 5px 20px;
+	border: 2px solid grey;
+	box-shadow: 1px 1px 5px;
+	width: fit-content;	
+}
+
+input[type="text"], input[type="password"], input[type="email"]{
+	padding: 10px 20px;
+	width: 250px;
+	outline: 0;
+	border-radius: 20px;
+	border: 1.1px solid #1A91DA;
+	margin-bottom: 10px;
+	color: black;
+}
+
+
+button, .button{
+	padding: 10px 20px;
+	border-radius: 20px;
+	outline: 0;
+	border: 0;
+	box-shadow: 1px 1px 3px black;
+	background-color: #1A91DA;
+}
+
+section{
+	min-height: 60vh;
+}
+
+.flashed_message{
+	background-color: #FAD165;
+	display: inline-block;
+	padding: 10px 20px;
+	opacity: 0.5;
+	border-radius: 10px;
+	color: grey;
+	margin: 0;
+	margin: 5px 0;
+}
+
+.link{
+	font-size: 20px;
+	color: black;
+	font-weight: bold;
+	text-decoration: underline;
+}
+
+
+a{
+	text-decoration: none;
+}
+
+ul{
+	list-style-type: none;
+}
+
+li{
+	display: inline-block;
+}

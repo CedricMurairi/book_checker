@@ -6,8 +6,8 @@
 	<nav>
 		<div id="give-credentials">
 			<ul>
-				<li id="signin-button"><a href="{{ url_for('main') }}">Home</a></li>
-				<li id="registration-button"><a href="{{ url_for('register_user') }}">Register</a></li>
+				<li class="link" id="signin-button"><a href="{{ url_for('main') }}">Home</a></li>
+				<li class="link" id="registration-button"><a href="{{ url_for('register_user') }}">Register</a></li>
 			</ul>
 		</div>
 	</nav>
@@ -16,8 +16,8 @@
 {% block body %}
 	<div id="signin-box">
 		<form action="{{url_for('signin_user')}}" method="POST">
-			<input type="email" name="email" placeholder="Enter your email">
-			<input type="password" name="password" placeholder="Enter your password">
+			<input type="email" name="email" placeholder="Enter your email"><br>
+			<input type="password" name="password" placeholder="Enter your password"><br>
 			<button type="submit">Sign In</button>
 		</form>
 	</div>

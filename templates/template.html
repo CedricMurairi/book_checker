@@ -11,7 +11,7 @@
 		<div id="logo">Books checker</div>
 		{% block nav %}
 			{% for message in get_flashed_messages() %}
-				<h1>{{ message }}</h1>
+				<h2 class="flashed_message">{{ message }}</h2>
 			{% endfor %}
 		{% endblock %}
 	</header>
@@ -20,6 +20,7 @@
 		{% endblock %}
 	</section>
 	<footer>
+		<hr>
 		<div id="copy-rights">Copy Rights&time; Cedric Murairi 2020</div>
 		<div id="company">InfinitLoop Developer</div>
 	</footer>

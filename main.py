@@ -13,6 +13,7 @@ db = scoped_session(sessionmaker(bind=engine))
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SECRET_KEY"] = "SLK(@)()(uhui&GFHQ09FU9Q0-(@**&#y&*W97F89W80R9W099E0-0QJDIAWUE*@)(e)@y&*ey*@yhr@u"
+apiKey = "rYxKBo3lCt40jW0Oq6eg"
 
 @app.route('/', methods=['GET', 'POST'])
 def main():
@@ -21,9 +22,10 @@ def main():
 		isbnNumber = request.form.get('isbnNumber')
 		bookAuthor = request.form.get('author')
 		bookTitle = request.form.get('title')
-		result = db.execute('SELECT * FROM books WHERE isbn = :isbn or title = :title or author = :author', {'isbn': isbnNumber, 'title': bookTitle, 'author': bookAuthor}).fetchall()
-		if(result is None):
+		result = db.execute('SELECT * FROM books WHERE isbn = :isbn OR title = :title OR author = :author', {'isbn': isbnNumber, 'title': bookTitle, 'author': bookAuthor}).fetchall()
+		if(not result):
 			flash('Nosuch a book in our collection')
+			return redirect(url_for('main'))
 			# return redirect(url_for('main'))
 		return render_template('search.html', result=result, email=session.get('email'), name=session.get('name'))
 	if (session.get('email') and session.get('password')):
@@ -45,7 +47,7 @@ def register_user():
 		password = request.form.get('password')
 		name = request.form.get('name')
 		# Check if registering user already exist in our database
-		check_user = db.execute('SELECT email, password FROM users WHERE email = :email and password = :password', {'email': email, 'password': password}).fetchone()
+		check_user = db.execute('SELECT email, password FROM users WHERE email = :email AND password = :password', {'email': email, 'password': password}).fetchone()
 		if(check_user):
 			# If registering user exist in DB, do not register user
 			flash('The user already exist')
@@ -68,7 +70,7 @@ def signin_user():
 	if(request.method == 'POST'):
 		email = request.form.get('email')
 		password = request.form.get('password')
-		user_credential = db.execute('SELECT name, email, password FROM users WHERE email = :email and password = :password', {'email': email, 'password': password}).fetchone()
+		user_credential = db.execute('SELECT name, email, password FROM users WHERE email = :email AND password = :password', {'email': email, 'password': password}).fetchone()
 		if(user_credential):
 			session['email'] = user_credential.email
 			session['password'] = user_credential.password
@@ -83,9 +85,21 @@ def signin_user():
 # @app.route('/result')
 # def search_result()
 
-@app.route("/book/<int:book_id>")
+@app.route("/book/<int:book_id>", methods=['GET', 'POST'])
 def book_detail(book_id):
-	return '<h1>Book with id</h1>'
+	if request.method == 'POST':
+		review = request.form.get('rating')
+		review_detail = request.form.get('review')
+		reviewer = db.execute('SELECT * FROM users WHERE email = :email AND password = :password', {'email': session.get('email'), 'password': session.get('password')}).fetchone()
+		db.execute('INSERT INTO reviews (book, review, review_detail, reviewer) VALUES (:book, :review, :detail, :reviewer)', {'book': book_id, 'review': review, 'detail': review_detail, 'reviewer': reviewer.id})
+		db.commit()
+		flash('reviewer submitted')
+	result = db.execute('SELECT * FROM books WHERE id = :id', {'id': book_id}).fetchone()
+	user_review = db.execute('SELECT * FROM reviews WHERE id = :id', {'id': book_id}).fetchone()
+	res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": apiKey, "isbns": result.isbn})
+	average_rating_goodread = res.json()['books'][len(res.json()) - 1 ]['average_rating']
+	number_of_rating_goodread = res.json()['books'][0]['reviews_count']
+	return render_template('book_info.html', result=result, user_review=user_review, average_rating_goodread=average_rating_goodread, number_of_rating_goodread=number_of_rating_goodread)
 
 @app.route('/logout')
 def logout_user():
