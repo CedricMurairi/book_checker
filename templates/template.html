@@ -2,7 +2,7 @@
 <html>
 <head>
 	<title>{% block title %}{% endblock %}</title>
-	<link rel="stylesheet" type="text/css" href="statics/main.css">
+	<link rel="stylesheet" type="text/css" href="../statics/main.css">
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
@@ -10,12 +10,12 @@
 	<header>
 		<div id="logo">Books checker</div>
 		{% block nav %}
-			{% for message in get_flashed_messages() %}
-				<h2 class="flashed_message">{{ message }}</h2>
-			{% endfor %}
 		{% endblock %}
 	</header>
 	<section>
+		{% for message in get_flashed_messages() %}
+			<h2 class="flashed_message">{{ message }}</h2>
+		{% endfor %}
 		{% block body %}
 		{% endblock %}
 	</section>

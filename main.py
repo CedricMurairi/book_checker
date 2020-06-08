@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 app = Flask(__name__, static_folder="statics")
-engine = create_engine(os.getenv("DATABASE_URI"))
+engine = create_engine(os.getenv("DATABASE_URI"), pool_size=20, max_overflow=0)
 db = scoped_session(sessionmaker(bind=engine))
 
 app.config["SESSION_PERMANENT"] = False
@@ -33,11 +33,6 @@ def main():
 		return render_template('index.html', email=session.get('email'), name=session.get('name'))
 	else:
 		return redirect(url_for('signin_user'))
-	# apiKey = "rYxKBo3lCt40jW0Oq6eg"
-	# apiResponse = res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": apiKey, "isbns": "9781632168146"})
-	# print(apiResponse.json())
-	# result = db.execute('SELECT * FROM students')
-	# finalResult = [element.name for element in result]
 	
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -81,9 +76,7 @@ def signin_user():
 			flash("Some thing is wrong with your email or password, try again")
 			return redirect(url_for('signin_user'))
 	return render_template('signin.html')
-
-# @app.route('/result')
-# def search_result()
+	
 
 @app.route("/book/<int:book_id>", methods=['GET', 'POST'])
 def book_detail(book_id):
@@ -95,7 +88,7 @@ def book_detail(book_id):
 		db.commit()
 		flash('reviewer submitted')
 	result = db.execute('SELECT * FROM books WHERE id = :id', {'id': book_id}).fetchone()
-	user_review = db.execute('SELECT * FROM reviews WHERE id = :id', {'id': book_id}).fetchone()
+	user_review = db.execute('SELECT * FROM reviews WHERE book = :id', {'id': book_id}).fetchall()
 	res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": apiKey, "isbns": result.isbn})
 	average_rating_goodread = res.json()['books'][len(res.json()) - 1 ]['average_rating']
 	number_of_rating_goodread = res.json()['books'][0]['reviews_count']

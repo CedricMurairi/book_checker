@@ -17,26 +17,28 @@
 	
 {% block body %}
 	{% if result %}
-		<li>Title: {{ result.title }}</li>
-		<li>Author: {{ result.author }}</li>
-		<li>Publishing Year: {{ result.year }}</li>
-		<li>ISBN Number{{ result.isbn }}</li>
+		<p>Title: {{ result.title }}</p>
+		<p>Author: {{ result.author }}</p>
+		<p>Publishing Year: {{ result.year }}</p>
+		<p>ISBN Number: {{ result.isbn }}</p>
 	{% endif %}
-	<h2>Reviews<h2>
+	<h3>Reviews<h3>
 	{% if user_review %}
-		{% for review in user_review %}
-			<div class="review">
-				<h3>{{ review.reviewer }}</h3>
-				<p>{{ review.review_detail }}</p>
-			</div>
-		{% endfor %}
+		<div id="reviews">
+			{% for review in user_review %}
+				<div class="review">
+					<p>{{ review.reviewer }}</p>
+					<p>{{ review.review_detail }}</p>
+				</div>
+			{% endfor %}
+		</div>
 	{% endif %}
-	<h2>Raring on Goodreads</h2>
-	<h4>{{ average_rating_goodread }}</h4>
-	<h4>{{ number_of_rating_goodread }}</h4>
+	<h3>Rating on Goodreads</h3>
+	<p>Average ranting pn Goodreads: {{ average_rating_goodread }}</p>
+	<p>Total number of ratind on Goodreads: {{ number_of_rating_goodread }}</p>
 	<form action="{{url_for('book_detail', book_id=result.id)}}" method="POST">
-		<input type="number" name="rating">
-		<input type="textarea" name="review" placeholder="Enter your review here to help others have a better experience with the books the next time they visit">
+		<input type="number" name="rating" max="5" min="0" value="1"><br>
+		<input type="textarea" name="review" placeholder="Enter your review here to help others have a better experience with the books the next time they visit"><br>
 		<button type="submit">Submit Review</button>
 	</form>
 {% endblock %}

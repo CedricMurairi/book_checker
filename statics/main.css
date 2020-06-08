@@ -1,6 +1,8 @@
 body{
 	width: 80%;
 	margin: auto;
+	margin-top: 20px;
+	margin-bottom: 20px;
 }
 
 #logo{
@@ -17,7 +19,7 @@ body{
 	width: fit-content;	
 }
 
-input[type="text"], input[type="password"], input[type="email"]{
+input[type="text"], input[type="password"], input[type="email"], input[type="number"], input[type="textarea"]{
 	padding: 10px 20px;
 	width: 250px;
 	outline: 0;
@@ -70,4 +72,22 @@ ul{
 
 li{
 	display: inline-block;
+}
+
+
+#reviews{
+	display: flex;
+	/*grid-template-columns: 1fr 1fr;
+	grid-template-columns: auto;*/
+	justify-content: space-between;
+	flex-direction: row;
+}
+
+.review{
+	margin: 5px 5px;
+	padding: 5px 10px;
+	min-width: 40%;
+	box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.3);
+	border-radius: 5px;
+	background-color: rgba(255, 255, 255, 0.4);
 }
