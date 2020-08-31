@@ -1,38 +1,136 @@
 import os
 
-from flask import Flask, render_template, session, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_wtf import Form
+from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms.validators import Required, EqualTo, Length, Regexp
+from flask_script import Manager, Shell
+from flask_migrate import Migrate, MigrateCommand
+from flask_sqlalchemy import SQLAlchemy
+from flask_moment import Moment
+from flask_bootstrap import Bootstrap
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 import requests
-from flask_session import Session
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
 
 app = Flask(__name__, static_folder="statics")
-engine = create_engine(os.getenv("DATABASE_URI"), pool_size=20, max_overflow=0)
-db = scoped_session(sessionmaker(bind=engine))
 
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-app.config["SECRET_KEY"] = "SLK(@)()(uhui&GFHQ09FU9Q0-(@**&#y&*W97F89W80R9W099E0-0QJDIAWUE*@)(e)@y&*ey*@yhr@u"
+
+# app.config["SESSION_PERMANENT"] = False
+# app.config["SESSION_TYPE"] = "filesystem"
+app.config["SECRET_KEY"] = os.urandom(32)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
 apiKey = "rYxKBo3lCt40jW0Oq6eg"
+
+
+manager = Manager(app)
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+moment = Moment(app)
+bootstrap = Bootstrap(app)
+login_manager = LoginManager(app)
+login_manager.session_protection = "strong"
+login_manager.logi_view = "app.login"
+
+
+class LoginForm(Form):
+	username = StringField('Username', validators=[Required()])
+	password = PasswordField('Password', validators=[Required()])
+	remember_me = BooleanField('Remember me')
+	submit = SubmitField('Log In')
+
+
+class RegistrationForm(Form):
+	username = StringField('Username', validators=[Required(), Length(1, 64), Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0, 'Usernames must have only letters, numbers, dots or underscores')])
+	password = PasswordField('Password', validators=[Required()])
+	confirm_password = PasswordField('Confirm password', validators=[Required(), EqualTo('password', 'Passwords must match')])
+	submit = SubmitField('Register')
+
+	def validate_username(self, field):
+		if User.query.filter_by(username=fiel.data).first():
+			raise ValidationError('Username already in use')
+
+
+class SearchForm(Form):
+	search_term = StringField('Type in your keyword for search', validators=[Required()])
+	submit = SubmitField('Search')
+
+
+
+class BookUser(UserMixin, db.Model):
+	__tablename__ = "bookusers"
+	id = db.Column(db.Integer, primary_key=True)
+	username = db.Column(db.String(64), unique=True)
+	password_hash = db.Column(db.String(128))
+	reviews = db.relationship('BookReview', backref='reviewer', lazy='dynamic')
+
+	@property
+	def password(self):
+		raise AttributeError('Password is not a readable attribute')
+
+	@password.setter
+	def password(self, password):
+		self.password_hash = generate_password_hash(password)
+
+	def verify_password(self, password):
+		return check_password_hash(self.password_hash, password)
+
+
+class Book(db.Model):
+	__tablename__ = "books"
+	id = db.Column(db.Integer, primary_key=True)
+	isbn = db.Column(db.String(64), unique=True)
+	title = db.Column(db.String(128))
+	author = db.Column(db.String(128))
+	pub_year = db.Column(db.Date)
+	reviews = db.relationship('BookReview', backref='book', lazy='dynamic')
+
+
+class BookReview(db.Model):
+	__tablename__ = "bookreviews"
+	id = db.Column(db.Integer, primary_key=True)
+	rate = db.Column(db.Integer)
+	comment = db.Column(db.Text())
+	book_reviewer = db.Column(db.Integer, db.ForeignKey('bookusers.id'))
+	book_reviewed = db.Column(db.Integer, db.ForeignKey('books.id'))
+
+
+@login_manager.user_loader
+def load_user(user_id):
+	return BookUser.query.get(int(user_id))
+
+
+@manager.command
+def create_table():
+	"""Create tables"""
+	print('Creating tables...')
+	db.create_all()
+	print('Tables created...')
+	import csv_converter as cs
+	cs.main()
+	print('Tables initialized with values...')
+
+
+def make_shell_context():
+    return dict(app=app, db=db, user=BookUser, book=Book, review=BookReview)
+
+manager.add_command("shell", Shell(make_context=make_shell_context))
+manager.add_command('db', MigrateCommand)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def main():
-	# On open check if there is user in current session
-	if (request.method == 'POST'):
-		isbnNumber = request.form.get('isbnNumber')
-		bookAuthor = request.form.get('author')
-		bookTitle = request.form.get('title')
-		result = db.execute('SELECT * FROM books WHERE isbn = :isbn OR title = :title OR author = :author', {'isbn': isbnNumber, 'title': bookTitle, 'author': bookAuthor}).fetchall()
-		if(not result):
-			flash('Nosuch a book in our collection')
-			return redirect(url_for('main'))
-			# return redirect(url_for('main'))
-		return render_template('search.html', result=result, email=session.get('email'), name=session.get('name'))
-	if (session.get('email') and session.get('password')):
-		flash("You are logged in successfully")
-		return render_template('index.html', email=session.get('email'), name=session.get('name'))
-	else:
-		return redirect(url_for('signin_user'))
+	form = SearchForm()
+	if form.validate_on_submit():
+		print('The key search term is', form.search_term.data)
+		form.search_term.data = ""
+	return render_template('index.html', form=form)
+
+
+if __name__ == '__main__':
+    with app.app_context():
+        manager.run()
 	
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -100,6 +198,3 @@ def logout_user():
 	session.pop('password')
 	session.pop('name')
 	return redirect(url_for('main'))
-
-if __name__ == "__main__":
-	main() 
