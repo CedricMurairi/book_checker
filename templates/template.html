@@ -1,28 +1,53 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>{% block title %}{% endblock %}</title>
-	<link rel="stylesheet" type="text/css" href="../statics/main.css">
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-	<header>
-		<div id="logo">Books checker</div>
-		{% block nav %}
+{% extends 'bootstrap/base.html' %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block html %}
+
+	{% block head %}
+
+		{% block styles %}
+			<!-- <link rel="stylesheet" type="text/css" href="/statics/main.css"> -->
 		{% endblock %}
-	</header>
-	<section>
-		{% for message in get_flashed_messages() %}
-			<h2 class="flashed_message">{{ message }}</h2>
-		{% endfor %}
-		{% block body %}
+		{% block metas %}
+			<meta name="viewport" content="width=device-width, initial-scale=1">
 		{% endblock %}
-	</section>
-	<footer>
-		<hr>
-		<div id="copy-rights">Copy Rights&time; Cedric Murairi 2020</div>
-		<div id="company">InfinitLoop Developer</div>
-	</footer>
-</body>
-</html>
+
+	{% endblock %}
+
+	{% block body %}
+		<header>
+			<div id="logo">Books checker</div>
+			<div id="navbar">
+				{% block navbar %}
+					{% if current_user.is_authenticated %}
+						<p>{{current_user.username}}</p>
+						<a href="{{ url_for('logout_user') }}">Logout</a>
+					{% else %}
+						<a href="{{ url_for('signin_user') }}">Login</a>
+						<a href="{{ url_for('register_user') }}">Register</a>
+					{% endif %}
+				{% endblock %}
+			</div>
+		</header>
+		<section>
+
+			{% for message in get_flashed_messages() %}
+				<h5 class="flashed_message">{{ message }}</h5>
+			{% endfor %}
+			
+			{% block content %}{% endblock %}
+
+		</section>
+		<footer>
+			<hr>
+			<div id="copy-rights">Copy Rights &copy; Cedric Murairi 2020</div>
+			<div id="company">InfinitLoop Developer</div>
+		</footer>
+	{% endblock %}
+
+	{% block scripts %}
+		{{super()}}
+		{{moment.include_moment()}}
+	{% endblock %}
+
+{% endblock %}
