@@ -2,9 +2,9 @@ import os
 
 from flask import Flask, render_template, redirect, url_for, request, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_wtf import Form
+from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import Required, EqualTo, Length, Regexp
+from wtforms.validators import InputRequired, EqualTo, Length, Regexp
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 from flask_sqlalchemy import SQLAlchemy
@@ -15,10 +15,7 @@ import requests
 
 app = Flask(__name__, static_folder="statics")
 
-
-# app.config["SESSION_PERMANENT"] = False
-# app.config["SESSION_TYPE"] = "filesystem"
-app.config["SECRET_KEY"] = os.urandom(32)
+app.config["SECRET_KEY"] = os.environ.get('SECRET_KEY') or os.urandom(32)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
 apiKey = "rYxKBo3lCt40jW0Oq6eg"
@@ -31,31 +28,30 @@ moment = Moment(app)
 bootstrap = Bootstrap(app)
 login_manager = LoginManager(app)
 login_manager.session_protection = "strong"
-login_manager.logi_view = "app.login"
+login_manager.login_view = "app.login"
 
 
-class LoginForm(Form):
-	username = StringField('Username', validators=[Required()])
-	password = PasswordField('Password', validators=[Required()])
+class LoginForm(FlaskForm):
+	username = StringField('Username', validators=[InputRequired()])
+	password = PasswordField('Password', validators=[InputRequired()])
 	remember_me = BooleanField('Remember me')
 	submit = SubmitField('Log In')
 
 
-class RegistrationForm(Form):
-	username = StringField('Username', validators=[Required(), Length(1, 64), Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0, 'Usernames must have only letters, numbers, dots or underscores')])
-	password = PasswordField('Password', validators=[Required()])
-	confirm_password = PasswordField('Confirm password', validators=[Required(), EqualTo('password', 'Passwords must match')])
+class RegistrationForm(FlaskForm):
+	username = StringField('Username', validators=[InputRequired(), Length(1, 64), Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0, 'Usernames must have only letters, numbers, dots or underscores')])
+	password = PasswordField('Password', validators=[InputRequired()])
+	confirm_password = PasswordField('Confirm password', validators=[InputRequired(), EqualTo('password', 'Passwords must match')])
 	submit = SubmitField('Register')
 
 	def validate_username(self, field):
-		if User.query.filter_by(username=fiel.data).first():
+		if BookUser.query.filter_by(username=field.data).first():
 			raise ValidationError('Username already in use')
 
 
-class SearchForm(Form):
-	search_term = StringField('Type in your keyword for search', validators=[Required()])
+class SearchForm(FlaskForm):
+	search_term = StringField('Type in your keyword for search', validators=[InputRequired()])
 	submit = SubmitField('Search')
-
 
 
 class BookUser(UserMixin, db.Model):
@@ -83,7 +79,7 @@ class Book(db.Model):
 	isbn = db.Column(db.String(64), unique=True)
 	title = db.Column(db.String(128))
 	author = db.Column(db.String(128))
-	pub_year = db.Column(db.Date)
+	pub_year = db.Column(db.Integer)
 	reviews = db.relationship('BookReview', backref='book', lazy='dynamic')
 
 
@@ -108,12 +104,15 @@ def create_table():
 	db.create_all()
 	print('Tables created...')
 	import csv_converter as cs
-	cs.main()
-	print('Tables initialized with values...')
+	if cs.main():
+		print('Tables initialized with values...')
+	else:
+		print('Error!! Something is wrong with the data')
 
 
 def make_shell_context():
-    return dict(app=app, db=db, user=BookUser, book=Book, review=BookReview)
+    return dict(app=app, db=db, User=BookUser, Book=Book, Review=BookReview)
+
 
 manager.add_command("shell", Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
@@ -125,76 +124,48 @@ def main():
 	if form.validate_on_submit():
 		print('The key search term is', form.search_term.data)
 		form.search_term.data = ""
-	return render_template('index.html', form=form)
+	books = Book.query[:20]
+	return render_template('index.html', form=form, books=books)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+	form = LoginForm()
+	if form.validate_on_submit():
+		user = BookUser.query.filter_by(username=form.username.data).first()
+		if user and user.verify_password(form.password.data):
+			login_user(user, form.remember_me.data)
+			return redirect(request.args.get('next') or url_for('main'))
+		flash('Invalid username or password')
+		form.username.data = ""
+	return render_template('signin.html', form=form)
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+	form = RegistrationForm()
+	if form.validate_on_submit():
+		user = BookUser(username=form.username.data, password=form.password.data)
+		db.session.add(user)
+		db.session.commit()
+		flash('You can now login')
+		return redirect(url_for('login'))
+	return render_template('register.html', form=form)
+
+
+@app.route("/book/<int:book_id>", methods=['GET', 'POST'])
+def book_detail(book_id):
+	return {'reponse': 'under development'}
+
+
+@app.route('/logout')
+@login_required
+def logout():
+	logout_user()
+	flash('You have been logged out')
+	return redirect(url_for('main'))
 
 
 if __name__ == '__main__':
     with app.app_context():
         manager.run()
-	
-
-@app.route('/register', methods=['GET', 'POST'])
-def register_user():
-	if(request.method == 'POST'):
-		email = request.form.get('email')
-		password = request.form.get('password')
-		name = request.form.get('name')
-		# Check if registering user already exist in our database
-		check_user = db.execute('SELECT email, password FROM users WHERE email = :email AND password = :password', {'email': email, 'password': password}).fetchone()
-		if(check_user):
-			# If registering user exist in DB, do not register user
-			flash('The user already exist')
-			return redirect(url_for('register_user'))
-		else:
-			db.execute("INSERT INTO users (name, email, password) VALUES (:name, :email, :password)", {'name':name, 'email':email, 'password':password})
-			db.commit()
-			session['email'] = email
-			session['password'] = password
-			session['name'] = name
-			flash("Registered successfully")
-			flash("Loggin automatically")
-			# TODO implement the actual insert in the database for the new user the redirect if only successful
-			return redirect(url_for('main'))
-	return render_template('register.html')
-
-
-@app.route('/signin', methods=['GET', 'POST'])
-def signin_user():
-	if(request.method == 'POST'):
-		email = request.form.get('email')
-		password = request.form.get('password')
-		user_credential = db.execute('SELECT name, email, password FROM users WHERE email = :email AND password = :password', {'email': email, 'password': password}).fetchone()
-		if(user_credential):
-			session['email'] = user_credential.email
-			session['password'] = user_credential.password
-			session['name'] = user_credential.name
-		# TODO implement the actual query in the database and check if the user exist
-			return redirect(url_for('main'))
-		else:
-			flash("Some thing is wrong with your email or password, try again")
-			return redirect(url_for('signin_user'))
-	return render_template('signin.html')
-	
-
-@app.route("/book/<int:book_id>", methods=['GET', 'POST'])
-def book_detail(book_id):
-	if request.method == 'POST':
-		review = request.form.get('rating')
-		review_detail = request.form.get('review')
-		reviewer = db.execute('SELECT * FROM users WHERE email = :email AND password = :password', {'email': session.get('email'), 'password': session.get('password')}).fetchone()
-		db.execute('INSERT INTO reviews (book, review, review_detail, reviewer) VALUES (:book, :review, :detail, :reviewer)', {'book': book_id, 'review': review, 'detail': review_detail, 'reviewer': reviewer.id})
-		db.commit()
-		flash('reviewer submitted')
-	result = db.execute('SELECT * FROM books WHERE id = :id', {'id': book_id}).fetchone()
-	user_review = db.execute('SELECT * FROM reviews WHERE book = :id', {'id': book_id}).fetchall()
-	res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": apiKey, "isbns": result.isbn})
-	average_rating_goodread = res.json()['books'][len(res.json()) - 1 ]['average_rating']
-	number_of_rating_goodread = res.json()['books'][0]['reviews_count']
-	return render_template('book_info.html', result=result, user_review=user_review, average_rating_goodread=average_rating_goodread, number_of_rating_goodread=number_of_rating_goodread)
-
-@app.route('/logout')
-def logout_user():
-	session.pop('email')
-	session.pop('password')
-	session.pop('name')
-	return redirect(url_for('main'))
