@@ -1,5 +1,17 @@
 {% extends 'template.html' %}
 
+{% block navbar %}
+
+	{% if current_user.is_authenticated %}
+		<p>{{current_user.username}}</p>
+		<a href="{{ url_for('logout') }}">Logout</a>
+	{% else %}
+		<a href="{{ url_for('login') }}">Login</a>
+		<a href="{{ url_for('register') }}">Register</a>
+	{% endif %}
+
+{% endblock %}
+
 {% block content %}
 
 	<h3>Welcome to the book checker, check and review book | see other people's reviews</h3>
@@ -8,7 +20,7 @@
 	</div>
 	<div id="book_list">
 		{% for book in books %}
-			<h5>{{book.title}}</h5>
+			<h5>{{book.isbn}} | {{book.title}} | {{book.author}} | {{book.pub_year}}</h5>
 		{% endfor %}
 	</div>
 
