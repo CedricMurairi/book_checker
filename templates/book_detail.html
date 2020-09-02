@@ -1,0 +1,39 @@
+{% extends 'template.html' %}
+
+{% block navbar %}
+
+	{% if current_user.is_authenticated %}
+		<p>{{current_user.username}}</p>
+		<a href="{{ url_for('logout') }}">Logout</a>
+	{% else %}
+		<a href="{{ url_for('login') }}">Login</a>
+		<a href="{{ url_for('register') }}">Register</a>
+	{% endif %}
+
+{% endblock %}
+
+{% block content %}
+
+	<h3>{{book.isbn}}|{{book.title}}|{{book.author}}|{{book.pub_year}}</h3>
+	<div id="book_detail">
+		<div class="book_single_card card">
+			<h3>ISBN: {{book.isbn}} | Title: {{book.title}}</h3>
+			<h4>Author: {{book.author}} | Publication year: {{book.pub_year}}</h4>
+			<h5>Number of reviews: | Review:</h5>
+		</div>
+		<div id="review_form">
+			{{ wtf.quick_form(form) }}
+		</div>
+		<div id="reviews">
+			{% for review in reviews %}
+				<div class="review_card card">
+					<h3>{{review.book_reviewer}} {% if current_user.id==review.book_reviewer %}<span><a href="{{ url_for('edit_review', review_id=review.id) }}">Edit</a></span>{% endif %}</h3>
+					<hr>
+					<p>{{review.comment}}</p>
+					<h5>Rating: </h5>
+				</div>
+			{% endfor %}
+		</div>
+	</div>
+
+{% endblock %}
