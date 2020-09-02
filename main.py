@@ -3,14 +3,15 @@ import os
 from flask import Flask, render_template, redirect, url_for, request, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import InputRequired, EqualTo, Length, Regexp
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, IntegerField, ValidationError, TextAreaField
+from wtforms.validators import InputRequired, EqualTo, Length, Regexp, NumberRange
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import and_, or_, func
 from flask_moment import Moment
 from flask_bootstrap import Bootstrap
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import requests
 
 app = Flask(__name__, static_folder="statics")
@@ -28,7 +29,7 @@ moment = Moment(app)
 bootstrap = Bootstrap(app)
 login_manager = LoginManager(app)
 login_manager.session_protection = "strong"
-login_manager.login_view = "app.login"
+login_manager.login_view = "login"
 
 
 class LoginForm(FlaskForm):
@@ -50,8 +51,17 @@ class RegistrationForm(FlaskForm):
 
 
 class SearchForm(FlaskForm):
-	search_term = StringField('Type in your keyword for search', validators=[InputRequired()])
+	isbn = StringField('Type in the isbn', validators=[InputRequired()])
+	title = StringField('Type in the title', validators=[InputRequired()])
+	author = StringField('Type in the author', validators=[InputRequired()])
+	pub_year = StringField('Type in the year of publication', validators=[InputRequired()])
 	submit = SubmitField('Search')
+
+
+class ReviewForm(FlaskForm):
+	rate = IntegerField('How do you rate this book?', validators=[InputRequired(), NumberRange(1, 5)])
+	comment = TextAreaField('Give your comment and note to the author', validators=[InputRequired()])
+	submit = SubmitField('Submit review')
 
 
 class BookUser(UserMixin, db.Model):
@@ -122,14 +132,27 @@ manager.add_command('db', MigrateCommand)
 def main():
 	form = SearchForm()
 	if form.validate_on_submit():
-		print('The key search term is', form.search_term.data)
-		form.search_term.data = ""
+		isbn = form.isbn.data
+		title = form.title.data.lower()
+		author = form.author.data.lower()
+		pub_year = form.pub_year.data
+		form.isbn.data = ""
+		form.title.data = ""
+		form.author.data = ""
+		form.pub_year.data = ""
+		books = Book.query.filter(or_(Book.isbn.like("%" +isbn+ "%"), func.lower(Book.author).like("%" +author+ "%"), func.lower(Book.title).like("%" +title+ "%"), Book.pub_year==pub_year)).all()
+		if books:
+			return render_template('index.html', form=form, books=books)
+		flash('There is no such a book in our records')
+		return redirect(url_for('main'))
 	books = Book.query[:20]
 	return render_template('index.html', form=form, books=books)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+	if current_user.is_authenticated:
+		return redirect(url_for('main'))
 	form = LoginForm()
 	if form.validate_on_submit():
 		user = BookUser.query.filter_by(username=form.username.data).first()
@@ -143,6 +166,8 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+	if current_user.is_authenticated:
+		return redirect(url_for('main'))
 	form = RegistrationForm()
 	if form.validate_on_submit():
 		user = BookUser(username=form.username.data, password=form.password.data)
@@ -152,10 +177,54 @@ def register():
 		return redirect(url_for('login'))
 	return render_template('register.html', form=form)
 
+# @app.route("/book/search", methods=['GET', 'POST'])
+# def search_book():
+# 	if books:
+# 		return {'response': [{'isbn': book.isbn, 'title': book.title, 'author': book.author, 'pub_year': book.pub_year} for book in books]}
+# 	return {'response': 'Oopps! there is no match for that book'}
 
-@app.route("/book/<int:book_id>", methods=['GET', 'POST'])
+
+@app.route("/book/<int:book_id>/detail", methods=['GET', 'POST'])
+@login_required
 def book_detail(book_id):
-	return {'reponse': 'under development'}
+	form = ReviewForm()
+	if form.validate_on_submit():
+		rate = form.rate.data
+		comment = form.comment.data
+		form.rate.data = ""
+		form.comment.data = ""
+		if current_user.reviews.filter_by(book_reviewed=book_id).first():
+			flash('You cannot review the same book twice')
+			return redirect(url_for('book_detail', book_id=book_id))
+		review = BookReview(rate=rate, comment=comment, book_reviewer=current_user.id, book_reviewed=book_id)
+		db.session.add(review)
+		db.session.commit()
+		return redirect(url_for('book_detail', book_id=book_id))
+	book = Book.query.get(book_id)
+	reviews = book.reviews
+	for review in reviews:
+		print(review.comment, review.book_reviewed)
+	if book:
+		return render_template('book_detail.html', book=book, form=form, reviews=reviews)
+	flash('There is not such a book in our records, check your url if you entered it manually')
+	return redirect('main')
+
+
+@app.route("/review/<int:review_id>/edit", methods=['GET', 'POST'])
+@login_required
+def edit_review(review_id):
+	form = ReviewForm()
+	if form.validate_on_submit():
+		review = BookReview.query.get(review_id)
+		review.rate = form.rate.data
+		review.comment = form.comment.data
+		db.session.add(review)
+		db.session.commit()
+		return redirect(url_for('book_detail', book_id=review.book_reviewed))
+	review = BookReview.query.get(review_id)
+	form.rate.data = review.rate
+	form.comment.data = review.comment
+	return render_template('edit_review.html', form=form)
 
 
 @app.route('/logout')
