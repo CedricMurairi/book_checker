@@ -1,0 +1,55 @@
+
+#book_list, #book_detail{
+	margin: 30px 0px;
+}
+
+#book_detail{
+	margin: 10px 0px 30px 0px;
+}
+
+#reviews{
+	margin: 20px 0px 20px 0px;
+}
+
+.card, .book_single_card, .review_card{
+	border-radius: 5px;
+	border: 1px solid rgba(0, 0, 0, 0.2);
+	box-shadow: none;
+	padding: 3px 20px;
+	width: 50%;
+	margin-top: 10px;
+	color: rgba(0, 0, 0, 0.6);
+}
+
+.review_card{
+	color: black;
+}
+
+hr{
+	padding: 0;
+	margin: 0;
+	opacity: 0.3;
+}
+
+span{
+	font-size: 13px;
+	float: right;
+}
+
+.book_single_card{
+	margin: 0px 0px 30px 0px;
+}
+
+.card h4, .card h3, .card h5, .card p{
+	padding: 0;
+	margin: 0;
+	padding: 5px 0px;
+}
+
+.card a, .card a:visited, a{
+	color: #283E4A;
+}
+
+#logo a, #navbar a{
+	text-decoration: none;
+}
