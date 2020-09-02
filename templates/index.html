@@ -14,13 +14,17 @@
 
 {% block content %}
 
-	<h3>Welcome to the book checker, check and review book | see other people's reviews</h3>
+	<h3>Welcome to the book checker, check and review books | see other people's reviews</h3>
 	<div id="search_form">
 		{{wtf.quick_form(form)}}
 	</div>
 	<div id="book_list">
 		{% for book in books %}
-			<h5>{{book.isbn}} | {{book.title}} | {{book.author}} | {{book.pub_year}}</h5>
+			<div class="card">
+				<a href="{{ url_for('book_detail', book_id=book.id) }}"><h3>ISBN: {{book.isbn}} | Title: {{book.title}}</h3></a>
+				<h4>Author: {{book.author}} | Publication year: {{book.pub_year}}</h4>
+				<h5>Number of reviews: | Review:</h5>
+			</div>
 		{% endfor %}
 	</div>
 

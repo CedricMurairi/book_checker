@@ -7,6 +7,7 @@
 
 		{% block styles %}
 			<!-- <link rel="stylesheet" type="text/css" href="/statics/main.css"> -->
+			<link rel="stylesheet" type="text/css" href="/statics/file.css">
 		{% endblock %}
 		{% block metas %}
 			<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,7 +17,7 @@
 
 	{% block body %}
 		<header>
-			<div id="logo">Books checker</div>
+			<div id="logo"><a href="{{ url_for('main') }}">Books checker</a></div>
 			<div id="navbar">
 				{% block navbar %}
 				{% endblock %}
