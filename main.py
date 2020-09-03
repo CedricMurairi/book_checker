@@ -1,29 +1,27 @@
-import os
-
+import os, json
 from flask import Flask, render_template, redirect, url_for, request, flash
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, IntegerField, ValidationError, TextAreaField
-from wtforms.validators import InputRequired, EqualTo, Length, Regexp, NumberRange
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_, or_, func
 from flask_moment import Moment
 from flask_bootstrap import Bootstrap
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import requests
+from datetime import datetime
+from model import BookUser, Book, BookReview, db
+from form import LoginForm, RegistrationForm, SearchForm, ReviewForm
+
 
 app = Flask(__name__, static_folder="statics")
 
 app.config["SECRET_KEY"] = os.environ.get('SECRET_KEY') or os.urandom(32)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
-apiKey = "rYxKBo3lCt40jW0Oq6eg"
+apiKey = "kdqQUypXImd7O1u128tzeg"
 
 
 manager = Manager(app)
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app, db)
 moment = Moment(app)
 bootstrap = Bootstrap(app)
@@ -32,74 +30,9 @@ login_manager.session_protection = "strong"
 login_manager.login_view = "login"
 
 
-class LoginForm(FlaskForm):
-	username = StringField('Username', validators=[InputRequired()])
-	password = PasswordField('Password', validators=[InputRequired()])
-	remember_me = BooleanField('Remember me')
-	submit = SubmitField('Log In')
-
-
-class RegistrationForm(FlaskForm):
-	username = StringField('Username', validators=[InputRequired(), Length(1, 64), Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0, 'Usernames must have only letters, numbers, dots or underscores')])
-	password = PasswordField('Password', validators=[InputRequired()])
-	confirm_password = PasswordField('Confirm password', validators=[InputRequired(), EqualTo('password', 'Passwords must match')])
-	submit = SubmitField('Register')
-
-	def validate_username(self, field):
-		if BookUser.query.filter_by(username=field.data).first():
-			raise ValidationError('Username already in use')
-
-
-class SearchForm(FlaskForm):
-	isbn = StringField('Type in the isbn', validators=[InputRequired()])
-	title = StringField('Type in the title', validators=[InputRequired()])
-	author = StringField('Type in the author', validators=[InputRequired()])
-	pub_year = StringField('Type in the year of publication', validators=[InputRequired()])
-	submit = SubmitField('Search')
-
-
-class ReviewForm(FlaskForm):
-	rate = IntegerField('How do you rate this book?', validators=[InputRequired(), NumberRange(1, 5)])
-	comment = TextAreaField('Give your comment and note to the author', validators=[InputRequired()])
-	submit = SubmitField('Submit review')
-
-
-class BookUser(UserMixin, db.Model):
-	__tablename__ = "bookusers"
-	id = db.Column(db.Integer, primary_key=True)
-	username = db.Column(db.String(64), unique=True)
-	password_hash = db.Column(db.String(128))
-	reviews = db.relationship('BookReview', backref='reviewer', lazy='dynamic')
-
-	@property
-	def password(self):
-		raise AttributeError('Password is not a readable attribute')
-
-	@password.setter
-	def password(self, password):
-		self.password_hash = generate_password_hash(password)
-
-	def verify_password(self, password):
-		return check_password_hash(self.password_hash, password)
-
-
-class Book(db.Model):
-	__tablename__ = "books"
-	id = db.Column(db.Integer, primary_key=True)
-	isbn = db.Column(db.String(64), unique=True)
-	title = db.Column(db.String(128))
-	author = db.Column(db.String(128))
-	pub_year = db.Column(db.Integer)
-	reviews = db.relationship('BookReview', backref='book', lazy='dynamic')
-
-
-class BookReview(db.Model):
-	__tablename__ = "bookreviews"
-	id = db.Column(db.Integer, primary_key=True)
-	rate = db.Column(db.Integer)
-	comment = db.Column(db.Text())
-	book_reviewer = db.Column(db.Integer, db.ForeignKey('bookusers.id'))
-	book_reviewed = db.Column(db.Integer, db.ForeignKey('books.id'))
+# def fetch_goodread_data(isbn):
+# 	response = requests.get("https://www.goodreads.com/book/review_counts.json", params={'key': apiKey, 'ISBN': isbn})
+# 	print(response.json())
 
 
 @login_manager.user_loader
@@ -158,6 +91,7 @@ def login():
 		user = BookUser.query.filter_by(username=form.username.data).first()
 		if user and user.verify_password(form.password.data):
 			login_user(user, form.remember_me.data)
+			flash('Login was succesful')
 			return redirect(request.args.get('next') or url_for('main'))
 		flash('Invalid username or password')
 		form.username.data = ""
@@ -176,12 +110,6 @@ def register():
 		flash('You can now login')
 		return redirect(url_for('login'))
 	return render_template('register.html', form=form)
-
-# @app.route("/book/search", methods=['GET', 'POST'])
-# def search_book():
-# 	if books:
-# 		return {'response': [{'isbn': book.isbn, 'title': book.title, 'author': book.author, 'pub_year': book.pub_year} for book in books]}
-# 	return {'response': 'Oopps! there is no match for that book'}
 
 
 @app.route("/book/<int:book_id>/detail", methods=['GET', 'POST'])
@@ -202,10 +130,11 @@ def book_detail(book_id):
 		return redirect(url_for('book_detail', book_id=book_id))
 	book = Book.query.get(book_id)
 	reviews = book.reviews
+	reviewers = {}
 	for review in reviews:
-		print(review.comment, review.book_reviewed)
+		reviewers[review.book_reviewer] = BookUser.query.get(review.book_reviewer)
 	if book:
-		return render_template('book_detail.html', book=book, form=form, reviews=reviews)
+		return render_template('book_detail.html', reviewers=reviewers, book=book, form=form, reviews=reviews)
 	flash('There is not such a book in our records, check your url if you entered it manually')
 	return redirect('main')
 
@@ -218,6 +147,7 @@ def edit_review(review_id):
 		review = BookReview.query.get(review_id)
 		review.rate = form.rate.data
 		review.comment = form.comment.data
+		review.timestamp = datetime.utcnow()
 		db.session.add(review)
 		db.session.commit()
 		return redirect(url_for('book_detail', book_id=review.book_reviewed))
@@ -225,6 +155,14 @@ def edit_review(review_id):
 	form.rate.data = review.rate
 	form.comment.data = review.comment
 	return render_template('edit_review.html', form=form)
+
+
+@app.route("/api/<string:isbn>", methods=['GET'])
+def api(isbn):
+	book = Book.query.filter_by(isbn=isbn).first()
+	if not book:
+		return {'response': 'The book does not exist in our records'}, 404
+	return {'response': {'title': book.title, 'author': book.author, 'pub_year': book.pub_year, 'isbn': book.isbn, 'review_count': book.reviews.count(), 'average_rating': book.average_rating()}}
 
 
 @app.route('/logout')
