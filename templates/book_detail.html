@@ -3,8 +3,7 @@
 {% block navbar %}
 
 	{% if current_user.is_authenticated %}
-		<p>{{current_user.username}}</p>
-		<a href="{{ url_for('logout') }}">Logout</a>
+		<p><span>{{current_user.username}}</span> <a href="{{ url_for('logout') }}">Logout</a></p>
 	{% else %}
 		<a href="{{ url_for('login') }}">Login</a>
 		<a href="{{ url_for('register') }}">Register</a>
@@ -14,12 +13,12 @@
 
 {% block content %}
 
-	<h3>{{book.isbn}}|{{book.title}}|{{book.author}}|{{book.pub_year}}</h3>
+	<h3 id="intro">{{book.isbn}} | {{book.title}} | {{book.author}} | {{book.pub_year}}</h3>
 	<div id="book_detail">
 		<div class="book_single_card card">
 			<h3>ISBN: {{book.isbn}} | Title: {{book.title}}</h3>
 			<h4>Author: {{book.author}} | Publication year: {{book.pub_year}}</h4>
-			<h5>Number of reviews: | Review:</h5>
+			<h5>Reviews: {{book.reviews.count()}} | Average rating: {% for i in range(0, book.average_rating()) %}<img src="/statics/rating_star.gif" width="8px">{% endfor %}</h5>
 		</div>
 		<div id="review_form">
 			{{ wtf.quick_form(form) }}
@@ -27,10 +26,10 @@
 		<div id="reviews">
 			{% for review in reviews %}
 				<div class="review_card card">
-					<h3>{{review.book_reviewer}} {% if current_user.id==review.book_reviewer %}<span><a href="{{ url_for('edit_review', review_id=review.id) }}">Edit</a></span>{% endif %}</h3>
+					<h3>{{reviewers[review.book_reviewer].username}} {% if review.book_reviewer==current_user.id %} (You) {% endif %} {% if current_user.id==review.book_reviewer %}<span><a href="{{ url_for('edit_review', review_id=review.id) }}">Edit</a></span>{% endif %} <span>{{moment(review.timestamp).fromNow(refresh=True)}}</span></h3>
 					<hr>
 					<p>{{review.comment}}</p>
-					<h5>Rating: </h5>
+					<h5>Rating: {% for i in range(0, review.rate) %}<img src="/statics/rating_star.gif" width="8px">{% endfor %}</h5>
 				</div>
 			{% endfor %}
 		</div>

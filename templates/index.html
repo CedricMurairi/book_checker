@@ -3,8 +3,7 @@
 {% block navbar %}
 
 	{% if current_user.is_authenticated %}
-		<p>{{current_user.username}}</p>
-		<a href="{{ url_for('logout') }}">Logout</a>
+		<p><span>{{current_user.username}}</span> <a href="{{ url_for('logout') }}">Logout</a></p>
 	{% else %}
 		<a href="{{ url_for('login') }}">Login</a>
 		<a href="{{ url_for('register') }}">Register</a>
@@ -14,7 +13,7 @@
 
 {% block content %}
 
-	<h3>Welcome to the book checker, check and review books | see other people's reviews</h3>
+	<h3 id="intro">Welcome to the book checker, check and review books | see other people's reviews</h3>
 	<div id="search_form">
 		{{wtf.quick_form(form)}}
 	</div>
@@ -23,7 +22,11 @@
 			<div class="card">
 				<a href="{{ url_for('book_detail', book_id=book.id) }}"><h3>ISBN: {{book.isbn}} | Title: {{book.title}}</h3></a>
 				<h4>Author: {{book.author}} | Publication year: {{book.pub_year}}</h4>
-				<h5>Number of reviews: | Review:</h5>
+				{% if book.reviews.count() != 0 %}
+					<h5>Reviews: {{book.reviews.count()}} | Average rating: {% for i in range(0, book.average_rating()) %}<img src="/statics/rating_star.gif" width="8px">{% endfor %}</h5>
+				{% else %}
+					<h5>There is no review yet! Review this book.</h5>
+				{% endif %}
 			</div>
 		{% endfor %}
 	</div>

@@ -1,13 +1,13 @@
-{% extends 'bootstrap/base.html' %}
-{% import 'bootstrap/wtf.html' as wtf %}
+{% extends "bootstrap/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
 
 {% block html %}
 
 	{% block head %}
 
 		{% block styles %}
-			<!-- <link rel="stylesheet" type="text/css" href="/statics/main.css"> -->
 			<link rel="stylesheet" type="text/css" href="/statics/file.css">
+			<link rel="icon" type="image/png" href="/statics/book_checker_logo.png"/>
 		{% endblock %}
 		{% block metas %}
 			<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,7 +17,7 @@
 
 	{% block body %}
 		<header>
-			<div id="logo"><a href="{{ url_for('main') }}">Books checker</a></div>
+			<div id="logo"><a href="{{ url_for('main') }}"><img src="/statics/book_checker_logo.png" width="25px">Book checker</a></div>
 			<div id="navbar">
 				{% block navbar %}
 				{% endblock %}
@@ -26,16 +26,16 @@
 		<section>
 
 			{% for message in get_flashed_messages() %}
-				<h5 class="flashed_message">{{ message }}</h5>
+				<h4 class="flashed_message">{{ message }}</h4>
 			{% endfor %}
 			
 			{% block content %}{% endblock %}
 
 		</section>
+		<hr>
 		<footer>
-			<hr>
-			<div id="copy-rights">Copy Rights &copy; Cedric Murairi 2020</div>
-			<div id="company">InfinitLoop Developer</div>
+			<div id="copy-rights">Copy Rights &copy; Black Hole Company 2020</div>
+			<div id="company">Black Hole Company</div>
 		</footer>
 	{% endblock %}
 
