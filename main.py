@@ -1,5 +1,6 @@
 import os, json
 from flask import Flask, render_template, redirect, url_for, request, flash
+from flask_sslify import SSLify
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 from sqlalchemy import and_, or_, func
@@ -12,11 +13,13 @@ from model import BookUser, Book, BookReview, db
 from form import LoginForm, RegistrationForm, SearchForm, ReviewForm
 
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 app = Flask(__name__, static_folder="statics")
 
 app.config["SECRET_KEY"] = os.environ.get('SECRET_KEY') or os.urandom(32)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
 apiKey = "kdqQUypXImd7O1u128tzeg"
 
 
@@ -26,6 +29,7 @@ migrate = Migrate(app, db)
 moment = Moment(app)
 bootstrap = Bootstrap(app)
 login_manager = LoginManager(app)
+# sslify = SSLify(app)
 login_manager.session_protection = "strong"
 login_manager.login_view = "login"
 
@@ -51,6 +55,14 @@ def create_table():
 		print('Tables initialized with values...')
 	else:
 		print('Error!! Something is wrong with the data')
+
+
+@manager.command
+def deploy():
+	"""Run deployment tasks"""
+	from flask_migrate import upgrade
+	"""Migrate database to the latest version"""
+	upgrade()
 
 
 def make_shell_context():
