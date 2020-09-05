@@ -3,7 +3,7 @@ from main import db, Book
 
 def main():
 	try:
-		with open('/home/cedricmurairi/Documents/CS50Course/projects/project1/books.csv', newline='') as csvfile:
+		with open('https://drive.google.com/file/d/1MoU0axmeGCa6retXS3S5M7EbjP2hBVHk/view?usp=sharing', newline='') as csvfile:
 
 			bookreader = csv.reader(csvfile, delimiter=',', quotechar='"', doublequote=True, skipinitialspace=True)
 
