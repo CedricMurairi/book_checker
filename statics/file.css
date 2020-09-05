@@ -4,6 +4,7 @@ body{
 }
 
 header{
+	position: relative;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -28,6 +29,12 @@ footer{
 	border-radius: 5px;
 	cursor: pointer;
 	font-weight: bold;
+}
+
+#close{
+	display: none;
+	color: white;
+	cursor: pointer;
 }
 
 #navbar span{
@@ -114,6 +121,7 @@ input[type="text"], input[type="password"], textarea, .flashed_message{
 	border-radius: 5px;
 	width: 50%;
 	color: #283E4A;
+	box-sizing: border-box;
 }
 
 input[type="submit"]{
@@ -145,4 +153,80 @@ label{
 .form-group{
 	display: flex;
 	flex-direction: column;
+}
+
+@media screen and (max-width: 800px){
+	body{
+		width: 70%;
+	}
+
+	.navbar{
+		display: none;
+		position: absolute;
+		top: 0;
+		right: 0;
+		height: 20vh;
+		width: 100px;
+		background-color: rgba(0, 0, 0, 0.4);
+		text-align: center;
+		border-radius: 5px;
+		padding-top: 10px;
+		z-index: 500;
+	}
+
+	input[type="text"], input[type="password"], textarea, .flashed_message{
+		width: 100%;
+	}
+
+	#logo{
+		font-size: 30px;
+	}
+
+	#navbar a{
+		padding: 10px 20px;
+		outline: none;
+		border: none;
+		border-radius: 0px;
+		cursor: pointer;
+		font-weight: bold;
+		color: white;
+	}
+
+	#navbar span{
+		font-size: 15px;
+		font-weight: bold;
+		color: #283E4A;
+	}
+
+	#menu-icon{
+		width: 50px;
+		height: 25px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		padding: 2px 0px 2px 0px;
+		outline: none;
+		border: 1px solid rgba(0, 0, 0, 0.2);
+		border-radius: 5px;
+		cursor: pointer;
+	}
+
+	#menu-icon div{
+		height: 1px;
+		width: 80%;
+		background-color: #283E4A;
+		margin: 3px;
+		box-sizing: border-box;
+	}
+
+	.show{
+		display: block;
+	}
+}
+
+@media screen and (max-width: 450px){
+	body{
+		width: 90%;
+	}
 }

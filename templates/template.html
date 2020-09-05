@@ -18,9 +18,15 @@
 	{% block body %}
 		<header>
 			<div id="logo"><a href="{{ url_for('main') }}"><img src="/statics/book_checker_logo.png" width="25px">Book checker</a></div>
-			<div id="navbar">
+			<div id="menu-icon">
+				<div></div>
+				<div></div>
+				<div></div>
+			</div>
+			<div id="navbar" class="navbar">
 				{% block navbar %}
 				{% endblock %}
+				<h4 id="close">Close</h4>
 			</div>
 		</header>
 		<section>
@@ -42,6 +48,7 @@
 	{% block scripts %}
 		{{super()}}
 		{{moment.include_moment()}}
+		<script type="text/javascript" src="/statics/file.js"></script>
 	{% endblock %}
 
 {% endblock %}
